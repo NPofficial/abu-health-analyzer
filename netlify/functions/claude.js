@@ -84,18 +84,32 @@ exports.handler = async (event) => {
   clearTimeout(timeout);
 
   const data = await resp.json();
-  if (!resp.ok || typeof data.completion !== 'string') {
-    console.error('Claude API error:', data);
-    return {
-      statusCode: resp.status || 502,
-      headers,
-      body: JSON.stringify({ error: 'Claude API error', details: data }),
-    };
-  }
-
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ completion: data.completion }),
-  };
-};
++
++  // Попытка прочитать текст из двух возможных полей:
++  let text;
++  if (typeof data.completion === 'string') {
++    // старый /v1/messages endpoint
++    text = data.completion;
++  } else if (data.choices && data.choices[0]?.message?.content) {
++    // новый /v1/chat/completions
++    text = data.choices[0].message.content;
++  } else {
++    console.error('Unexpected Claude API response format:', data);
++    return {
++      statusCode: 500,
++      headers,
++      body: JSON.stringify({
++        error: 'Invalid response from Claude API',
++        details: data
++      }),
++    };
++  }
++
++  // Успешный ответ
++  return {
++    statusCode: 200,
++    headers,
++    body: JSON.stringify({
++      completion: text.trim()
++    }),
++  };
