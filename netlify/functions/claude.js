@@ -1,0 +1,160 @@
+// netlify/functions/claude.js
+exports.handler = async (event, context) => {
+    // Test 1: CORS headers
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+    };
+
+    // Test 2: Handle preflight OPTIONS request
+    if (event.httpMethod === 'OPTIONS') {
+        console.log('✅ Test: CORS preflight handled');
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ message: 'CORS preflight OK' })
+        };
+    }
+
+    // Test 3: Only allow POST method
+    if (event.httpMethod !== 'POST') {
+        console.log('❌ Test: Invalid method:', event.httpMethod);
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({ error: 'Method not allowed. Use POST.' })
+        };
+    }
+
+    try {
+        // Test 4: API key validation
+        const apiKey = event.headers['x-api-key'];
+        if (!apiKey) {
+            console.log('❌ Test: No API key provided');
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'API key required in x-api-key header' 
+                })
+            };
+        }
+
+        if (!apiKey.startsWith('sk-ant-')) {
+            console.log('❌ Test: Invalid API key format');
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Invalid Claude API key format' 
+                })
+            };
+        }
+
+        // Test 5: Request body validation
+        if (!event.body) {
+            console.log('❌ Test: No request body');
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Request body required' 
+                })
+            };
+        }
+
+        let requestData;
+        try {
+            requestData = JSON.parse(event.body);
+        } catch (parseError) {
+            console.log('❌ Test: Invalid JSON in body');
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Invalid JSON in request body' 
+                })
+            };
+        }
+
+        // Test 6: Claude API request structure
+        if (!requestData.model || !requestData.messages) {
+            console.log('❌ Test: Missing required Claude API fields');
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Missing model or messages in request' 
+                })
+            };
+        }
+
+        console.log('✅ Test: All validations passed, calling Claude API...');
+
+        // Test 7: Call Claude API with proper headers
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: event.body
+        });
+
+        console.log('✅ Test: Claude API response status:', response.status);
+
+        const data = await response.json();
+
+        // Test 8: Handle Claude API errors
+        if (!response.ok) {
+            console.log('❌ Test: Claude API error:', response.status, data);
+            return {
+                statusCode: response.status,
+                headers,
+                body: JSON.stringify({
+                    error: 'Claude API error',
+                    details: data,
+                    status: response.status
+                })
+            };
+        }
+
+        // Test 9: Validate Claude response structure
+        if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+            console.log('❌ Test: Invalid Claude response structure');
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({
+                    error: 'Invalid response from Claude API',
+                    details: 'Missing or empty content array'
+                })
+            };
+        }
+
+        console.log('✅ Test: Claude API success, content length:', data.content[0].text?.length || 0);
+
+        // Test 10: Return successful response
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(data)
+        };
+
+    } catch (error) {
+        console.log('❌ Test: Function error:', error.message);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+                error: 'Internal server error',
+                details: error.message,
+                timestamp: new Date().toISOString()
+            })
+        };
+    }
+};
