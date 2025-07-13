@@ -56,9 +56,9 @@ exports.handler = async (event) => {
     };
   }
 
-  // Таймаут 10 секунд
+  // Таймаут 60 секунд
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
 
   let resp;
   try {
