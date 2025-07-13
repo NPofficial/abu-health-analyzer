@@ -1,160 +1,101 @@
 // netlify/functions/claude.js
-exports.handler = async (event, context) => {
-    // Test 1: CORS headers
-    const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json'
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  const headers = {
+    'Access-Control-Allow-Origin': 'https://bright-paprenjak-c4b434.netlify.app/',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+  };
+
+  // CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers };
+  }
+
+  // Только POST
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Only POST allowed' }),
     };
+  }
 
-    // Test 2: Handle preflight OPTIONS request
-    if (event.httpMethod === 'OPTIONS') {
-        console.log('✅ Test: CORS preflight handled');
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: 'CORS preflight OK' })
-        };
-    }
+  // Проверка тела запроса
+  let body;
+  try {
+    body = JSON.parse(event.body);
+  } catch {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'Invalid JSON in request body' }),
+    };
+  }
 
-    // Test 3: Only allow POST method
-    if (event.httpMethod !== 'POST') {
-        console.log('❌ Test: Invalid method:', event.httpMethod);
-        return {
-            statusCode: 405,
-            headers,
-            body: JSON.stringify({ error: 'Method not allowed. Use POST.' })
-        };
-    }
+  if (typeof body.model !== 'string' || !Array.isArray(body.messages)) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({
+        error: 'Request must include "model" (string) and "messages" (array)',
+      }),
+    };
+  }
 
-    try {
-        // Test 4: API key validation
-        const apiKey = event.headers['x-api-key'];
-        if (!apiKey) {
-            console.log('❌ Test: No API key provided');
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'API key required in x-api-key header' 
-                })
-            };
-        }
+  // Берём ключ из окружения
+  const API_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!API_KEY) {
+    console.error('Anthropic API key is not set');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Server misconfiguration' }),
+    };
+  }
 
-        if (!apiKey.startsWith('sk-ant-')) {
-            console.log('❌ Test: Invalid API key format');
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'Invalid Claude API key format' 
-                })
-            };
-        }
+  // Таймаут 10 секунд
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
-        // Test 5: Request body validation
-        if (!event.body) {
-            console.log('❌ Test: No request body');
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'Request body required' 
-                })
-            };
-        }
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timeout);
+    console.error('Fetch error or timeout:', err);
+    return {
+      statusCode: 504,
+      headers,
+      body: JSON.stringify({ error: 'Upstream request timed out' }),
+    };
+  }
+  clearTimeout(timeout);
 
-        let requestData;
-        try {
-            requestData = JSON.parse(event.body);
-        } catch (parseError) {
-            console.log('❌ Test: Invalid JSON in body');
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'Invalid JSON in request body' 
-                })
-            };
-        }
+  const data = await resp.json();
+  if (!resp.ok || typeof data.completion !== 'string') {
+    console.error('Claude API error:', data);
+    return {
+      statusCode: resp.status || 502,
+      headers,
+      body: JSON.stringify({ error: 'Claude API error', details: data }),
+    };
+  }
 
-        // Test 6: Claude API request structure
-        if (!requestData.model || !requestData.messages) {
-            console.log('❌ Test: Missing required Claude API fields');
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'Missing model or messages in request' 
-                })
-            };
-        }
-
-        console.log('✅ Test: All validations passed, calling Claude API...');
-
-        // Test 7: Call Claude API with proper headers
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
-            body: event.body
-        });
-
-        console.log('✅ Test: Claude API response status:', response.status);
-
-        const data = await response.json();
-
-        // Test 8: Handle Claude API errors
-        if (!response.ok) {
-            console.log('❌ Test: Claude API error:', response.status, data);
-            return {
-                statusCode: response.status,
-                headers,
-                body: JSON.stringify({
-                    error: 'Claude API error',
-                    details: data,
-                    status: response.status
-                })
-            };
-        }
-
-        // Test 9: Validate Claude response structure
-        if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
-            console.log('❌ Test: Invalid Claude response structure');
-            return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({
-                    error: 'Invalid response from Claude API',
-                    details: 'Missing or empty content array'
-                })
-            };
-        }
-
-        console.log('✅ Test: Claude API success, content length:', data.content[0].text?.length || 0);
-
-        // Test 10: Return successful response
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify(data)
-        };
-
-    } catch (error) {
-        console.log('❌ Test: Function error:', error.message);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ 
-                error: 'Internal server error',
-                details: error.message,
-                timestamp: new Date().toISOString()
-            })
-        };
-    }
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ completion: data.completion }),
+  };
 };
