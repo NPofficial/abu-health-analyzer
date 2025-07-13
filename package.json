@@ -1,0 +1,37 @@
+{
+  "name": "abu-health-analyzer",
+  "version": "1.0.0",
+  "description": "AI-powered tongue analysis with personalized ABU supplement recommendations",
+  "main": "index.html",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'",
+    "test": "node test-function.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/abu-health-analyzer.git"
+  },
+  "keywords": [
+    "health",
+    "tongue-analysis",
+    "ai",
+    "claude",
+    "supplements",
+    "wellness"
+  ],
+  "author": "ABU Health",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "netlify": {
+    "functions": {
+      "directory": "netlify/functions"
+    }
+  }
+}
