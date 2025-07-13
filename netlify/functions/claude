@@ -1,4 +1,4 @@
-// netlify/functions/claude.js
+// netlify/functions/claude
 exports.handler = async (event, context) => {
     // Test 1: CORS headers
     const headers = {
