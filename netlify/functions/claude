@@ -1,4 +1,4 @@
-// netlify/functions/claude.j
+// netlify/functions/claude.js
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
