@@ -9,8 +9,7 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
+      min-height: 100vh; padding: 20px;
     }
     .container {
       max-width: 1000px; margin: 0 auto;
@@ -19,7 +18,7 @@
       overflow: hidden;
     }
     .header {
-      background: linear-gradient(45deg, #667eea, #764ba2);
+      background: linear-gradient(45deg,#667eea,#764ba2);
       color: white; padding: 30px; text-align: center;
     }
     .header h1 { font-size: 2.5em; margin-bottom: 10px; }
@@ -34,17 +33,18 @@
     .upload-area {
       border: 3px dashed #ddd; border-radius: 15px;
       padding: 40px; text-align: center;
-      cursor: pointer; margin: 20px 30px; transition: all 0.3s;
+      cursor: pointer; margin: 20px 30px;
+      transition: all 0.3s;
     }
-    .upload-area:hover      { border-color: #667eea; background: #f8f9ff; }
-    .upload-area.drag-over  { border-color: #28a745; background: #f0fff0; }
+    .upload-area:hover     { border-color: #667eea; background: #f8f9ff; }
+    .upload-area.drag-over { border-color: #28a745; background: #f0fff0; }
     .preview-image {
       max-width: 400px; max-height: 400px;
       border-radius: 15px; margin: 20px auto;
       display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
     .analyze-btn {
-      background: linear-gradient(45deg, #667eea, #764ba2);
+      background: linear-gradient(45deg,#667eea,#764ba2);
       color: white; border: none; padding: 18px 50px;
       border-radius: 50px; font-size: 1.2em;
       cursor: pointer; margin: 20px auto;
@@ -112,10 +112,10 @@
     <div id="status" class="status info">📷 Завантажте фото</div>
 
     <div class="upload-area" id="uploadArea">
-      <div style="font-size:3em; color:#ddd; margin-bottom:10px;">📷</div>
+      <div style="font-size:3em;color:#ddd;margin-bottom:10px;">📷</div>
       <h3>Завантажте фото язика</h3>
-      <p>Натисніть для вибору або перетягніть файл сюди</p>
-      <p><small>JPG, PNG, WebP (до 10MB)</small></p>
+      <p>Натисніть або перетягніть файл сюди</p>
+      <p><small>JPG, PNG, WebP до 10 MB</small></p>
       <input type="file" id="fileInput" accept="image/*" style="display:none;">
     </div>
 
@@ -126,12 +126,12 @@
     <div class="loading" id="loading">
       <div class="spinner"></div>
       <h3>🤖 Claude аналізує фото...</h3>
-      <p>Процес діагностики...</p>
+      <p>Почекайте, будь ласка...</p>
     </div>
 
     <div id="results" class="results">
       <div class="disclaimer">
-        ⚠️ Результати мають інформаційний характер і не замінюють консультацію лікаря.
+        ⚠️ Результати не замінюють консультацію лікаря.
       </div>
       <div class="analysis-section">
         <h3>🔍 Детальний аналіз</h3>
@@ -189,7 +189,7 @@
         return;
       }
       if (file.size > 10*1024*1024) {
-        showStatus('error','❌ Максимум 10 MB');
+        showStatus('error','❌ Файл більший за 10 MB');
         return;
       }
       selectedFile = file;
@@ -207,7 +207,7 @@
         showStatus('info','📷 Завантажте фото');
         analyzeBtn.disabled = true;
       } else {
-        showStatus('success','✅ Натисніть «Аналіз Claude»');
+        showStatus('success','✅ Файл готовий, натисніть «Аналіз Claude»');
         analyzeBtn.disabled = false;
       }
     }
@@ -229,10 +229,10 @@
     async function analyzeImage() {
       if (!selectedFile || isAnalyzing) return;
       isAnalyzing = true;
-      analyzeBtn.disabled   = true;
+      analyzeBtn.disabled    = true;
       loadingBox.style.display = 'block';
       resultsBox.style.display = 'none';
-      showStatus('info','🤖 Аналіз...');
+      showStatus('info','🤖 Claude аналізує...');
 
       try {
         const b64 = await fileToBase64(selectedFile);
@@ -240,14 +240,18 @@
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-3.5-sonnet',
             messages: [{ role:'user', content: b64 }]
           })
         });
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || `Status ${resp.status}`);
+        if (!resp.ok) {
+          let err = data.error;
+          if (typeof err !== 'string') err = JSON.stringify(err);
+          throw new Error(err || `Status ${resp.status}`);
+        }
         renderResults(data.completion);
-        showStatus('success','✅ Готово');
+        showStatus('success','✅ Аналіз завершено');
       } catch (err) {
         console.error(err);
         showStatus('error',`❌ ${err.message}`);
@@ -261,16 +265,23 @@
     function renderResults(text) {
       let obj;
       try { obj = JSON.parse(text); }
-      catch { detailed.textContent = text; resultsBox.style.display = 'block'; return; }
+      catch {
+        detailed.textContent = text;
+        resultsBox.style.display = 'block';
+        return;
+      }
 
       detailed.textContent = obj.detailed_analysis || text;
+
       if (obj.zone_analysis) {
         zone.innerHTML = Object.entries(obj.zone_analysis)
-          .map(([k,v]) => `<div class="zone-card"><h4>${k}</h4><p>${v}</p></div>`).join('');
+          .map(([k,v]) => `<div class="zone-card"><h4>${k}</h4><p>${v}</p></div>`)
+          .join('');
       }
       health.textContent = obj.health_interpretation || '';
       recs.innerHTML = (obj.wellness_recommendations||[])
-        .map(r=>`<div class="recommendation"><h4>${r.product}</h4><p>${r.reason}</p></div>`).join('');
+        .map(r=>`<div class="recommendation"><h4>${r.product}</h4><p>${r.reason}</p></div>`)
+        .join('');
       monitor.textContent = obj.monitoring || '';
       resultsBox.style.display = 'block';
     }
