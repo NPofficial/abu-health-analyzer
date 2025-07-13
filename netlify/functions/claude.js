@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
   const headers = {
-    'Access-Control-Allow-Origin': 'https://bright-paprenjak-c4b434.netlify.app/', // ← замени на свой
+    'Access-Control-Allow-Origin': '*', // или поставь свой домен
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ exports.handler = async (event) => {
     };
   }
 
-  // Парсим тело запроса
+  // Парсим тело
   let body;
   try {
     body = JSON.parse(event.body);
@@ -31,7 +31,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'Invalid JSON in request body' }),
+      body: JSON.stringify({ error: 'Invalid JSON' }),
     };
   }
 
@@ -46,10 +46,32 @@ exports.handler = async (event) => {
     };
   }
 
+  // Конвертируем messages из {role,content} в {user,assistant}
+  let anthMessages;
+  try {
+    anthMessages = body.messages.map((msg) => {
+      if (msg.role === 'user') {
+        if (typeof msg.content !== 'string') throw new Error('User message must be a string');
+        return { user: msg.content };
+      }
+      if (msg.role === 'assistant') {
+        if (typeof msg.content !== 'string') throw new Error('Assistant message must be a string');
+        return { assistant: msg.content };
+      }
+      throw new Error(`Unknown role: ${msg.role}`);
+    });
+  } catch (err) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: err.message }),
+    };
+  }
+
   // Берём ключ из окружения
   const API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!API_KEY) {
-    console.error('Anthropic API key is not set');
+    console.error('API key not set');
     return {
       statusCode: 500,
       headers,
@@ -61,6 +83,7 @@ exports.handler = async (event) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
 
+  // Вызываем Claude API
   let resp;
   try {
     resp = await fetch('https://api.anthropic.com/v1/chat/completions', {
@@ -72,7 +95,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         model: body.model,
-        messages: body.messages,
+        messages: anthMessages,
       }),
       signal: controller.signal,
     });
@@ -88,29 +111,45 @@ exports.handler = async (event) => {
     clearTimeout(timeout);
   }
 
-  const data = await resp.json();
-
-  // Обрабатываем оба формата ответа от Claude
-  let text;
-  if (typeof data.completion === 'string') {
-    // старый /v1/messages endpoint
-    text = data.completion;
-  } else if (data.choices && data.choices[0]?.message?.content) {
-    // новый /v1/chat/completions
-    text = data.choices[0].message.content;
-  } else {
-    console.error('Unexpected Claude API response format:', data);
+  // Читаем JSON-ответ
+  let data;
+  try {
+    data = await resp.json();
+  } catch (err) {
+    console.error('Invalid JSON from Claude:', err);
     return {
-      statusCode: 500,
+      statusCode: 502,
       headers,
-      body: JSON.stringify({
-        error: 'Invalid response from Claude API',
-        details: data,
-      }),
+      body: JSON.stringify({ error: 'Invalid JSON from Claude API' }),
     };
   }
 
-  // Возвращаем результат
+  // Если Claude вернул ошибку
+  if (!resp.ok) {
+    console.error('Claude API error:', data);
+    return {
+      statusCode: resp.status || 502,
+      headers,
+      body: JSON.stringify({ error: data.error || data }),
+    };
+  }
+
+  // Извлекаем текст ответа
+  let text;
+  if (typeof data.completion === 'string') {
+    text = data.completion;
+  } else if (data.choices?.[0]?.message?.content) {
+    text = data.choices[0].message.content;
+  } else {
+    console.error('Unexpected Claude response format:', data);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Invalid response from Claude API', details: data }),
+    };
+  }
+
+  // Возвращаем клиенту
   return {
     statusCode: 200,
     headers,
