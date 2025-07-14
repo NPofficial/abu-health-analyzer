@@ -62,6 +62,11 @@ exports.handler = async (event) => {
   const claudeMessages = body.messages.map(m => {
     if (m.role === "user" && m.content.startsWith("data:image")) {
       const [mimeType, base64Data] = m.content.split(";base64,");
+      console.log("Received base64 data length:", base64Data.length); // Log the length of base64 data
+      console.log("Received mime type:", mimeType); // Log the mime type
+      // Optionally, log a snippet of the base64 data for inspection
+      // console.log("Base64 data snippet:", base64Data.substring(0, 100)); 
+
       return {
         role: "user",
         content: [
