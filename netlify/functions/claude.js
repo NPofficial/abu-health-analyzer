@@ -10,11 +10,11 @@ exports.handler = async (event) => {
   };
 
   // CORS preflight
-  if (event.httpMethod === "OPTIONS" ) {
+  if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers };
   }
   // Только POST
-  if (event.httpMethod !== "POST" ) {
+  if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
       headers,
@@ -60,22 +60,22 @@ exports.handler = async (event) => {
 
   // Prepare messages for Claude API, handling image input
   const claudeMessages = body.messages.map(m => {
-    if (m.role === 'user' && m.content.startsWith('data:image')) {
-      const [mimeType, base64Data] = m.content.split(';base64,');
+    if (m.role === "user" && m.content.startsWith("data:image")) {
+      const [mimeType, base64Data] = m.content.split(";base64,");
       return {
-        role: 'user',
+        role: "user",
         content: [
           {
-            type: 'image',
+            type: "image",
             source: {
-              type: 'base64',
-              media_type: mimeType.replace('data:', ''),
+              type: "base64",
+              media_type: mimeType.replace("data:", ""),
               data: base64Data,
             },
           },
           {
-            type: 'text',
-            text: 'Analyze the tongue in this image for coating, color, cracks, and swelling. Provide personalized health recommendations and suggest relevant ABU supplements based on the findings. Format the response as a JSON object with fields: detailed_analysis, zone_analysis (object), health_interpretation, wellness_recommendations (array of objects with product and reason), and monitoring.',
+            type: "text",
+            text: "Analyze the tongue in this image for coating, color, cracks, and swelling. Provide personalized health recommendations and suggest relevant ABU supplements based on the findings. Format the response as a JSON object with fields: detailed_analysis, zone_analysis (object), health_interpretation, wellness_recommendations (array of objects with product and reason), and monitoring.",
           },
         ],
       };
@@ -92,15 +92,13 @@ exports.handler = async (event) => {
       headers: {
         "Content-Type": "application/json",
         "x-api-key": API_KEY,
-        "anthropic-version": "2023-06-01", // Use the correct API version for messages endpoint
+        "anthropic-version": "2023-06-01", // Confirmed API version
       },
       body: JSON.stringify({
-        // Updated model name. Refer to Anthropic API documentation for the latest model names.
-        // Example: "claude-3-5-sonnet-20241022-v2:0"
-        model: "claude-3-5-sonnet-20241022-v2:0", // Using a specific version of claude-3.5-sonnet
+        model: "claude-3-5-sonnet", // Using the general model name
         max_tokens: 4000, // Set a reasonable max_tokens
         messages: claudeMessages,
-      } ),
+      }),
       signal: controller.signal,
     });
   } catch (err) {
@@ -139,7 +137,7 @@ exports.handler = async (event) => {
 
   // Извлекаем текст
   let text;
-  if (data.content && data.content.length > 0 && data.content[0].type === 'text') {
+  if (data.content && data.content.length > 0 && data.content[0].type === "text") {
     text = data.content[0].text;
   } else {
     console.error("Unexpected response format:", data);
