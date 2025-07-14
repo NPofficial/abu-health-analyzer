@@ -6,7 +6,231 @@
   <title>Health Analyzer Pro</title>
   <style>
     /* Ваша существующая стилизация */
-    /* … (из примера выше) … */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 700px;
+      text-align: center;
+    }
+
+    .header h1 {
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .status {
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    .status.info {
+      background-color: #e0f7fa;
+      color: #00796b;
+    }
+
+    .status.success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status.error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 30px;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    .upload-area:hover,
+    .upload-area.drag-over {
+      border-color: #007bff;
+    }
+
+    .upload-area h3 {
+      color: #555;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+
+    .upload-area p {
+      color: #777;
+      font-size: 0.9em;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .analyze-btn {
+      background-color: #007bff;
+      color: white;
+      padding: 12px 25px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+    }
+
+    .analyze-btn:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+
+    .analyze-btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading h3 {
+      color: #555;
+    }
+
+    .results {
+      display: none;
+      text-align: left;
+      margin-top: 30px;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+
+    .disclaimer {
+      background-color: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+    }
+
+    .analysis-section h3 {
+      color: #333;
+      margin-top: 25px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .analysis-section h3::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .analysis-section:nth-of-type(1) h3::before { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>'); }
+    .analysis-section:nth-of-type(2) h3::before { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>'); }
+    .analysis-section:nth-of-type(3) h3::before { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>'); }
+    .analysis-section:nth-of-type(4) h3::before { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>'); }
+    .analysis-section:nth-of-type(5) h3::before { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>'); }
+
+    .analysis-section p {
+      color: #444;
+      line-height: 1.6;
+    }
+
+    .zone-analysis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .zone-card {
+      background-color: #f9f9f9;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: left;
+    }
+
+    .zone-card h4 {
+      color: #333;
+      margin-top: 0;
+      margin-bottom: 5px;
+    }
+
+    .zone-card p {
+      color: #555;
+      font-size: 0.9em;
+    }
+
+    .recommendation {
+      background-color: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+
+    .recommendation h4 {
+      color: #096dd9;
+      margin-top: 0;
+      margin-bottom: 5px;
+    }
+
+    .recommendation p {
+      color: #1890ff;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
@@ -88,7 +312,7 @@
       updateStatus();
     }
 
-    function handleFile(file) {
+    async function handleFile(file) {
       if (!file || !file.type.startsWith('image/')) {
         return showStatus('error','❌ Оберіть зображення');
       }
@@ -96,13 +320,72 @@
         return showStatus('error','❌ Файл більший за 10 MB');
       }
       selectedFile = file;
+
+      // Оптимизация изображения
+      try {
+        const optimizedFile = await resizeAndCompressImage(file);
+        selectedFile = optimizedFile; // Обновляем selectedFile на оптимизированный файл
+      } catch (err) {
+        console.error("Ошибка оптимизации изображения:", err);
+        return showStatus('error',`❌ Ошибка обработки изображения: ${err.message}`);
+      }
+
       const rdr = new FileReader();
       rdr.onload = () => {
         previewImage.src = rdr.result;
         previewImage.style.display = 'block';
         updateStatus();
       };
-      rdr.readAsDataURL(file);
+      rdr.readAsDataURL(selectedFile); // Читаем оптимизированный файл
+    }
+
+    // Новая функция для изменения размера и сжатия изображения
+    function resizeAndCompressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_WIDTH = 1500;
+            const MAX_HEIGHT = 1500;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Сжатие изображения (качество 0.8 для JPEG)
+            canvas.toBlob((blob) => {
+              if (blob) {
+                // Создаем новый File объект из Blob
+                const newFile = new File([blob], file.name, { type: blob.type, lastModified: Date.now() });
+                resolve(newFile);
+              } else {
+                reject(new Error('Не удалось сжать изображение.'));
+              }
+            }, 'image/jpeg', 0.8); // Используем JPEG для лучшего сжатия
+          };
+          img.onerror = (err) => reject(new Error('Ошибка загрузки изображения для обработки.'));
+          img.src = event.target.result;
+        };
+        reader.onerror = (err) => reject(new Error('Ошибка чтения файла изображения.'));
+        reader.readAsDataURL(file);
+      });
     }
 
     function updateStatus() {
@@ -137,6 +420,7 @@
       showStatus('info','🤖 Claude аналізує...');
 
       try {
+        // selectedFile уже оптимизирован благодаря handleFile
         const b64 = await fileToBase64(selectedFile);
         const resp = await fetch('/api/claude', {
           method: 'POST',
@@ -191,4 +475,3 @@
   </script>
 </body>
 </html>
-```0
