@@ -95,7 +95,7 @@ exports.handler = async (event) => {
         "anthropic-version": "2023-06-01", // Confirmed API version
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet", // Using the general model name
+        model: "claude-3-haiku-20240307", // Changed to a more generally available model
         max_tokens: 4000, // Set a reasonable max_tokens
         messages: claudeMessages,
       }),
