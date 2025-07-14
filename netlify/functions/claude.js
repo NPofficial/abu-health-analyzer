@@ -66,16 +66,16 @@ exports.handler = async (event) => {
         role: "user",
         content: [
           {
+            type: "text",
+            text: "Analyze the tongue in the following image for coating, color, cracks, and swelling. Provide a detailed health interpretation of these findings. Then, suggest personalized wellness recommendations, including relevant ABU supplements. Format the response as a JSON object with the following strict structure: { \"detailed_analysis\": \"string\", \"zone_analysis\": { \"zone1\": \"string\", \"zone2\": \"string\", \"zone3\": \"string\", \"zone4\": \"string\", \"zone5\": \"string\" }, \"health_interpretation\": \"string\", \"wellness_recommendations\": [ { \"product\": \"string\", \"reason\": \"string\" } ], \"monitoring\": \"string\" }\n\nHere is the image:",
+          },
+          {
             type: "image",
             source: {
               type: "base64",
               media_type: mimeType.replace("data:", ""),
               data: base64Data,
             },
-          },
-          {
-            type: "text",
-            text: "Based on the provided image of a tongue, perform a detailed analysis focusing on coating, color, cracks, and swelling. Then, provide a health interpretation of these findings. Finally, suggest personalized wellness recommendations, including relevant ABU supplements, formatted as a JSON object. The JSON object must have the following structure: { \"detailed_analysis\": \"string\", \"zone_analysis\": { \"zone1\": \"string\", \"zone2\": \"string\", \"zone3\": \"string\", \"zone4\": \"string\", \"zone5\": \"string\" }, \"health_interpretation\": \"string\", \"wellness_recommendations\": [ { \"product\": \"string\", \"reason\": \"string\" } ], \"monitoring\": \"string\" }",
           },
         ],
       };
