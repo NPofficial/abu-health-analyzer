@@ -75,7 +75,7 @@ exports.handler = async (event) => {
           },
           {
             type: "text",
-            text: "Analyze the tongue in this image for coating, color, cracks, and swelling. Provide personalized health recommendations and suggest relevant ABU supplements based on the findings. Format the response as a JSON object with fields: detailed_analysis, zone_analysis (object), health_interpretation, wellness_recommendations (array of objects with product and reason), and monitoring.",
+            text: "Based on the provided image of a tongue, perform a detailed analysis focusing on coating, color, cracks, and swelling. Then, provide a health interpretation of these findings. Finally, suggest personalized wellness recommendations, including relevant ABU supplements, formatted as a JSON object. The JSON object must have the following structure: { \"detailed_analysis\": \"string\", \"zone_analysis\": { \"zone1\": \"string\", \"zone2\": \"string\", \"zone3\": \"string\", \"zone4\": \"string\", \"zone5\": \"string\" }, \"health_interpretation\": \"string\", \"wellness_recommendations\": [ { \"product\": \"string\", \"reason\": \"string\" } ], \"monitoring\": \"string\" }",
           },
         ],
       };
@@ -95,7 +95,7 @@ exports.handler = async (event) => {
         "anthropic-version": "2023-06-01", // Confirmed API version
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-20240307", // Changed to a more generally available model
+        model: "claude-3-haiku-20240307", // Using the general model name
         max_tokens: 4000, // Set a reasonable max_tokens
         messages: claudeMessages,
       }),
